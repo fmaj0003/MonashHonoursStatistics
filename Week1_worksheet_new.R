@@ -1,6 +1,7 @@
 #### 1. Basic R Use ####
 
 #testing 1,2,blah blah from my pc
+#this is from my laptop
 
 ## use R as a calculator
 3 + 4 # addition
