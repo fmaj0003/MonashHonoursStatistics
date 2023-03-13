@@ -5,6 +5,7 @@
 #this is edit 3
 #test 4
 #test 5
+#test 6
 
 ## use R as a calculator
 3 + 4 # addition
