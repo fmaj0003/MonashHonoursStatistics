@@ -1,5 +1,7 @@
 #### 1. Basic R Use ####
 
+#testing 1,2,
+
 ## use R as a calculator
 3 + 4 # addition
 
