@@ -42,7 +42,8 @@ db[, SE := rowMeans(.SD, na.rm = TRUE),
 
 # Remember how we make a density plot graph for just one variable, 
 # say, SE from our db dataset (we just created it)
-???
+ggplot(db, aes(SE, color = SE)) +
+  geom_density()
   
 
 # Remember that we have to tell R that certain variables are factors
@@ -66,7 +67,7 @@ db [, PSS2 := 6- PSS2r]
 db [, PSS3 := 6- PSS3r] 
 
 ## Do you remember how to create a Stress total?
-db[, Stress := rowMeans(.SD, na.rm = TRUE) * 4,
+db[, Stress := rowMeans(.SD, na.rm = TRUE) * 4, 
    .SDcols = c("PSS1", "PSS2", "PSS3", "PSS4")]
   
 
@@ -83,7 +84,8 @@ db[, StrCat := factor(StrCat, levels = c("low", "high"))]
 table(db$StrCat)
 
 ## Now that we have all that, create a density plot showing SE by Stress Category
-???
+ggplot(db, aes(SE, color = StrCat)) + aes()
+       geom_density()
   
 
 ## use `testDistribution()` to examine whether self esteem follows a
@@ -92,20 +94,31 @@ table(db$StrCat)
                         extremevalues = "theoretical", ev.perc = .005))
 
 ## Make a histogram for the variable: `extraversion`.
-???
-???
+db [, BFI_E1 := 6- BFI_E1r] #reverse scoring
+db[, extraversion := rowMeans(.SD, na.rm = TRUE), 
+     .SDcols = c("BFI_E1", "BFI_E2")] # making the extraversion variable
   
 
-???
+
+  
+
+ggplot(db, aes(extraversion, color = extraversion)) +
+  geom_histogram()
   
 
 ## Make a dotplot for: `openness` *separated* (e.g., by colour and/or fill)
 ## by `sex`:
-???
-???
-  
+db [, BFI_O1 := 6- BFI_O1r] #reverse scoring
+db[, openness := rowMeans(.SD, na.rm = TRUE),
+   .SDcols = c("BFI_O1", "BFI_O2")] #made openess a variable
 
-???
+db[, sex := factor(
+  sex,
+  levels = c(1,2),
+  labels = c("male", "female"))]
+
+
+ggplot(db, aes(openness, colour = sex)) + geom_dotplot()
   
 
   
@@ -130,11 +143,12 @@ table(db$StrCat)
 
 
 ## Check what the correlation between Self-Esteem and Neuroticism is
-???
-???
+db[, BFI_N1 := 6 - BFI_N1r]
+db[, nueroticism:= rowMeans(.SD, na.rm = TRUE),
+  .SDcols = c("BFI_N1", "BFI_N2")]
   
 
-cor.test(???)
+cor.test(~SE + neuroticism, data = db)
 
 ## Make a scatterplot showing the association between Self-Esteem and Neuroticism
 ## Include a linear regression line and print the statistics
