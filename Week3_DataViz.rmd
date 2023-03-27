@@ -559,7 +559,7 @@ gglikert("Mean", "variable", "Never", "Often", data = sumdat,
 Here is a little summary of some of the functions used so far. You might also enjoy this "cheatsheet" for `ggplot2`: <https://github.com/rstudio/cheatsheets/raw/master/data-visualization-2.1.pdf>
 
 | Function                   | What it does                                                                                                                          |
-|--------------------|----------------------------------------------------|
+|----------------------------|---------------------------------------------------------------------------------------------------------------------------------------|
 | `ggplot()`                 | Sets the dataset and which variables map to which aesthetics for a plot                                                               |
 | `geom_boxplot()`           | Adds geometric object for boxplots                                                                                                    |
 | `geom_density()`           | Adds a geometric object for density lines, a way to view a distribution                                                               |
