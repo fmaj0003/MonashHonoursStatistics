@@ -1,14 +1,13 @@
 ---
-title: "PSY4210 Lab Report - 2023 - Part 1"
-author: "Your Monash ID Number -- Your Full Name"
+title: "PSY4210 Lab Report - 2023 - Part 1" 
+author: "33777594 – Farhanul Bari Majumder" 
 date: "`r Sys.Date()`"
-output:
+output: 
   tufte::tufte_html: 
     toc: true
 ---
 
 # 1. Generalized Linear Models 1
-
 
 ```{r}
 
@@ -29,69 +28,170 @@ db <- as.data.table(read_sav("[2021] PSY4210 BL.sav")) # baseline data
 
 Fit **one** moderated, multiple linear regression. Pick from:
 
-- Outcome: Anxiety at baseline
-- Predictors: `sex` and any other variable of your choosing
-- Make sure that you include the interaction between your predictor and `sex`.
+-   Outcome: Anxiety at baseline
+-   Predictors: `sex` and any other variable of your choosing
+-   Make sure that you include the interaction between your predictor and `sex`.
 
-Note: you will need to score Anxiety from the STAI. For a
-refresher, see the content for Data Visualization 1.
+Note: you will need to score Anxiety from the STAI. For a refresher, see the content for Data Visualization 1.
 
 ```{r glm1reg}
 
+#creating variable "anxiety"
+db[, anxiety := rowMeans(.SD, na.rm = TRUE) * 4,
+   .SDcols = c("STAI1", "STAI2", "STAI3", "STAI4")]
+
+# turning sex into a factor
+db[, sex := factor( 
+  sex,
+  levels = c(1,2),
+  labels = c("male", "female"))]
+
+db [, BFI_C1 := 6- BFI_C1r] #reverse scoring
+db [, conscientiousness := rowMeans(.SD, na.rm = TRUE),
+    .SDcols = c("BFI_C1", "BFI_C2")] # creating variable "conscientiousness"
+
+
 ## put your regression model code using lm() here
 
+m <- lm(anxiety ~ sex * conscientiousness, data = db)
 
 
 ```
 
 ## Linear Regression Diagnostics
 
-Conduct model diagnostics on your regression model. Where applicable,
-apply appropriate transformations and/or exclude outliers.
+Conduct model diagnostics on your regression model. Where applicable, apply appropriate transformations and/or exclude outliers.
 
 ```{r glm1diagnostics}
 
 ## put your regression diagnostics code including plots using modelDiagnostics() here
+md <- modelDiagnostics(m, ev.perc = 0.005)
 
-
+plot(md, ncol = 2, ask = FALSE)
 
 ```
-
 
 ## Linear Regression Summary
 
-Create a summary of your **final** model, after any relevant
-transformations or extreme values have been addressed, where
-applicable.
+Create a summary of your **final** model, after any relevant transformations or extreme values have been addressed, where applicable.
 
-- use `modelTest()` and `APAStyler()` to get a nice result.
+-   use `modelTest()` and `APAStyler()` to get a nice result.
 
-Create a graph to help visualize your results using `visreg()`.
-Note, you may want to adjust the `fig.width` and `fig.height` options
-to this `R` chunk to make the graph have the ratios you like.
+Create a graph to help visualize your results using `visreg()`. Note, you may want to adjust the `fig.width` and `fig.height` options to this `R` chunk to make the graph have the ratios you like.
 
-```{r glm1plot, fig.width = 6, fig.height = 4}
+```{r glm1plot, fig.width = 8, fig.height = 6}
 
 ## put your code to summarize the final model using modelTest() here
-
+summary(m)
+confint(m) # calculating confidence interval
+mtest <- modelTest(m)
+knitr::kable(APAStyler(mtest)) # clean presentation
 
 ## put your code to visualize your regression model using visreg() here
-
+visreg(m, xvar = "conscientiousness", by = "sex", 
+       partial = FALSE, rug = FALSE,
+       overlay = TRUE, gg = TRUE) +
+  theme_pubr() +
+  ggtitle("Multiple regression for anxiety - separate lines for each sex group")
 
 ```
 
-In the last subheading (Linear Regression Write Up) for GLM1, briefly
-summarize your analysis steps, assumption checks, any changes
-performed, and interpret the interaction and regression coefficients,
-referencing your figure visualizing the result where appropriate. 
-The total length should be about one paragraph and about 150 words.
+In the last subheading (Linear Regression Write Up) for GLM1, briefly summarize your analysis steps, assumption checks, any changes performed, and interpret the interaction and regression coefficients, referencing your figure visualizing the result where appropriate. The total length should be about one paragraph and about 150 words.
 
 ## Linear Regression Write Up
 
-
-
+A multiple linear regression model (with interaction) was created with outcome variable anxiety and predictors conscientiousness and sex group. Total anxiety score was generated from summing the STAI questions. The first conscientiousness question (labelled "BFI_C1r") was reverse scored. Assumptions of normality were met with normally distributed errors (as seen in the residual distribution curve) and homoscedasticity. There was a statistically significant association between anxiety and conscientiousness, controlling for sex group. As visualised in the negative slope of regression figure, a one unit higher anxiety score was associated with a -1.87 [95% CI -3.63 - -0.10] lower conscientiousness score, p \< 0.05. Anxiety and sex group association was non-significant (-3.37, p = .366). The interaction between predictors sex and conscientiousness was non-significant (1.45, p = .127). Overall, conscientiousness and sex group explained 8.72% of the variance in self-esteem.
 
 # 2. Generalized Linear Models 2
 
+1.  Conduct one multiple logistic regression predicting high selfesteem "SelfesteemHigh" as created in the GLM2 lecture content **from two predictors of your choosing.**
 
+2.  Create a graph of the predicted probabilities of being in the SelfesteemHigh group by each of your two predictors. It should parallel the predicted probability plot in section 4.4 of the GLM2.rmd 
 
+3.  Report and interpret the odds ratios, 95% confidence intervals for each predictor and present the average marginal effect for each predictor to interpret the results on the probability scale.
+
+## Question 1: GLM High Self Esteem
+
+```{r}
+
+#create self-esteem from LSE questions
+db[, selfesteem:= rowMeans(.SD, na.rm = TRUE),
+.SDcols = c("LSE1", "LSE2", "LSE3", "LSE4")]
+db[, SelfesteemHigh := as.integer(selfesteem >= 3.75)] #create "SelfesteemHigh" variable
+
+#create extraversion variable (predictor) from BFI_E questions
+db [, BFI_E1 := 6- BFI_E1r] # reverse scoring
+db[, extraversion := rowMeans(.SD, na.rm = TRUE), 
+     .SDcols = c("BFI_E1", "BFI_E2")] # creating variable "extraversion"
+
+#create agreeableness variable (predictor) from BFI_A questions
+db [, BFI_A2 := 6- BFI_A2r] # reverse scoring
+db [, agreeableness := rowMeans(.SD, na.rm = TRUE),
+    .SDcols = c("BFI_A1", "BFI_A2")] #creating variable "agreeableness"
+
+mlog <- glm(SelfesteemHigh ~ extraversion + agreeableness,
+             data = db, family = binomial())
+summary(mlog)
+```
+
+## Question 2: High self esteem probability graph
+
+```{r}
+
+#predicted probability graph for SelfesteemHigh
+visreg(mlog, xvar = "extraversion",
+       by = "agreeableness", breaks = c(3, 4.5),
+       scale = "response", overlay = TRUE,
+       partial = FALSE, rug = FALSE, gg = TRUE) +
+  ylab("predicted probability of being high self esteem") +
+  theme_pubr()
+```
+
+## Question 3: Odds Ratio and Marginal Effects
+
+```{r}
+
+# Calculate Odds Ratio
+exp(coef(mlog))
+
+# Calculate Confidence intervals
+exp(confint(mlog))
+
+#calculate marginal effect, using h = .01
+h <- .01
+
+# making original dataset to interpret with predictors, excluding missing values
+originaldata <- db[!is.na(extraversion),
+                   .(extraversion, agreeableness)]
+
+# dataset with increased extraversion only
+IncreasedExtraversion <- db[!is.na(extraversion), 
+                   .(extraversion = extraversion + h, agreeableness)]
+
+# dataset with increased agreeableableness only
+IncreasedAgreeableness <- db[!is.na(extraversion), 
+                   .(extraversion, agreeableness = agreeableness + h)]
+
+# calculating predicted probabilities for original, extraversion and agreeableness
+originaldata$Prob <- predict(mlog, newdata = originaldata,
+                             type = "response")
+
+IncreasedExtraversion$Prob <- predict(mlog, newdata = IncreasedExtraversion,
+                             type = "response")
+
+IncreasedAgreeableness$Prob <- predict(mlog, newdata = IncreasedAgreeableness,
+                             type = "response")
+
+# calculating the difference in probabilities per unit
+ex.diffprob <- (IncreasedExtraversion$Prob - originaldata$Prob) / h
+ag.diffprob <- (IncreasedAgreeableness$Prob - originaldata$Prob) / h
+
+# calculating the average marginal effects
+mean(ex.diffprob) # extraversion
+mean(ag.diffprob) # agreeableness
+
+```
+
+## Odds Ratio and Marginal Effect Write up
+
+A multiple logistic regression predicting high self esteem from extraversion and agreeableness showed that for each additional unit of extraversion, participants have 1.86 times the odds of having high self-esteem [95% CI 1.33 - 2.66], p \< .001. For each additional unit of agreeableness, participants have 1.76 times the odds of having high self-esteem [95% CI 1.17 - 2.73], p \< .01. When holding agreeableness constant, increasing extraversion by one unit on average is predicted to result in 0.13 change (increase) in the probability of having high self-esteem. Alternatively, when holding extraversion constant, increasing agreeableness by one unit on average is predicted to results in 0.12 change (increase) in the probability of having high self-esteem.
