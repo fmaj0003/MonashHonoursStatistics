@@ -22,11 +22,11 @@ dm <- as.data.table(read_sav("[2021] PSY4210 merged.sav"))
 # dEnergy (measured daily; continuous, create average levels)
 # Int_Fam (measured daily; categorical)
 
-dm[, c("???", "???") := meanDeviations(???), by = ???]
+dm[, c("Benergy", "Wenergy") := meanDeviations(dEnergy), by = ID]
 
-desc1 <- egltable(c("???", "???", "???", "???"),
+desc1 <- egltable(c("relsta","openness", "agreeableness", "Benergy"),
                   data = dm[!duplicated(ID)], strict = FALSE)
-desc2 <-   egltable(c("???"), data = dm, strict = FALSE)
+desc2 <-   egltable(c("Int_Fam"), data = dm, strict = FALSE)
 setnames(desc1, c("", "M (SD)/N (%)"))
 setnames(desc2, c("", "M (SD)/N (%)"))
 rbind(desc1, desc2)
@@ -37,13 +37,13 @@ dm[, dEnergy := as.numeric(dEnergy)]
 # Like last week, fit a random intercept model predicting 'dEnergy'. 
 ## store the model results in an object called "m2lmm" 
 # (hint we did this in the worksheet last week)
-m2lmm <- ???(??? ~ ??? + (??? | ???), data = ???)
+m2lmm <- lmer(dEnergy ~ 1 + (1 | ID), data = dm)
 
 ## now make a summary of the model results
-???(m2lmm)
+summary(m2lmm)
 
 ## look at model diagnostics here
-plot(???(???), ncol = 2, nrow = 2, ask = FALSE)
+plot(modelDiagnostics(m2lmm), ncol = 2, nrow = 2, ask = FALSE)
 
 ###### ANSWERS BELOW WILL NOT BE GIVEN AS THEY'RE TOO SIMILAR TO LAB REPORT
 
