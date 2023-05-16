@@ -17,15 +17,15 @@ dm <- as.data.table(read_sav("[2021] PSY4210 merged.sav"))
 
 # Review: Model fixed effects of agreeableness and daily mood 
 # predicting daily self esteem, with a random intercept
-???
+summary(lmer(dSE ~ agreeableness + dMood + (1 | ID), data = dm))
 
 # Controlling for ________, 
-# as mood ______, self esteem on the same day _______
+# as mood increases, self esteem on the same day increases
 
 # Model fixed effects of between and within versions of mood 
 # predicting self esteem
-???
-???
+dm[, c("Bmood", "Wmood") := meanDeviations(dMood), by = ID]
+summary(lmer(dSE ~ Bmood + Wmood + (1 |ID), data = dm))
 
 # Greater deviations from a person's average ____ are associated 
 # with ____ in _____ on the same day
@@ -46,17 +46,19 @@ dm[, relsta := factor(
   labels = c("single", "committed excl rel", "committed nonexcl rel"))]
 
 # Model the interaction of Int_Part and relationship status predicting daily self esteem
-m1 <- lmer(dSE ~ ??? + (1 | ID), data = dm)
+m1 <- lmer(dSE ~ Int_Part + relsta + Int_Part:relsta  + (1 | ID), data = dm)
 summary(m1)
 
+summary(lmer(dSE ~ Int_Part * relsta + (1 | ID), data = dm ))
 
 
 # Visualise this categorical x categorical interaction
-visreg(???
-         
+visreg(m1, xvar = "Int_Part",
+       by = "relsta", overlay = TRUE,
+       partial = FALSE, rug = FALSE
          )
 
-em <- emmeans(???
+em <- emmeans(m1, "Int_Part", by "relsta", lmer.df = "satterthwaite"
                 )
 emmip(???) +
   theme_pubr() +
