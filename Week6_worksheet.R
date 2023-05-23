@@ -36,11 +36,16 @@ aggr(dd_sub, prop = TRUE, numbers = TRUE, cex.numbers = .5, cex.axis = .8)
 marginplot(dd_sub[, .(dMood,dLoneliness)])
 
 # Does there seem to be much association?
-# A: No, not much association               ##Double check this with Michelle
+# A: No
 
 # To do MI, we have to make sure the class of all the variables are correct.
 # Because they were imported from SPSS, they're all wrong. How do we change them?
-???
+dd_sub$SurveyDay <- as.numeric(dd_sub$SurveyDay)
+dd_sub$dSE <- as.numeric(dd_sub$dSE)
+dd_sub$dMood <- as.numeric(dd_sub$dMood)
+dd_sub$dStress <- as.numeric(dd_sub$dStress)
+dd_sub$dEnergy <- as.numeric(dd_sub$dEnergy)
+dd_sub$dLoneliness <- as.numeric(dd_sub$dLoneliness)
 
 ### FROM HERE ONWARDS, ANSWERS WILL NOT BE UPLOADED, AS THEY ARE TOO SIMILAR 
 ### TO YOUR LAB REPORTS. I WILL HELP YOU IN CLASS BUT I CAN'T GIVE THE ANSWERS

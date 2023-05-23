@@ -1,6 +1,6 @@
 ---
 title: "PSY4210 Lab Report - 2023 - Part 2"
-author: "Your Monash ID Number -- Your Full Name"
+author: "33777594 -- Farhanul Majumder"
 date: "`r Sys.Date()`"
 output:
   tufte::tufte_html: 
@@ -9,8 +9,7 @@ output:
 
 # Set up
 
-
-```{r}
+```{r packages, message=FALSE}
 
 library(haven)
 library(data.table)
@@ -20,25 +19,179 @@ library(ggpubr)
 library(visreg)
 
 # Add other packages you need here
+library(tufte)
+library(mice)
+library(VIM)
+library(lme4)
+library(lmerTest)
+library(multilevelTools)
+library(emmeans)
+
 ```
 
+# Loading Data
 
+```{r data setup}
+## read in the dataset
+data(aces_daily)
+d <- as.data.table(aces_daily)
 
+## between person data, no missing
+davg <- na.omit(d[, .(
+ Female = factor(na.omit(Female)[1], levels = 0:1),
+ Age = na.omit(Age)[1],
+ STRESS = mean(STRESS, na.rm = TRUE),
+ PosAff = mean(PosAff, na.rm = TRUE),
+ NegAff = mean(NegAff, na.rm = TRUE)),
+ by = UserID])
+
+## create missing data
+davgmiss <- copy(davg)
+davgmiss[STRESS < 1, NegAff := NA]
+davgmiss[STRESS > 4, PosAff := NA]
+
+## random missingness on age
+set.seed(1234)
+davgmiss[, Age := ifelse(rbinom(
+ .N, size = 1, prob = .1) == 1,
+ NA, Age)]
+
+## drop unneeded variables to make analysis easier
+davgmiss[, UserID := NULL]
+```
 
 # 3. Missing Data
 
+```{r}
 
+## multiply impute data
+mi.1 <- mice(
+  davgmiss,
+  m = 5,   maxit = 30,
+  defaultMethod = c("norm", "logreg", "polyreg", "polr"),
+  seed = 1234, printFlag = FALSE)
+
+## convergence plot
+plot(mi.1, PosAff + NegAff + Age ~ .it | .ms)
+
+## linear regression with imputed dataset
+mi.reg <- with(mi.1, lm(STRESS ~ NegAff + Age))
+
+mi.reg #print
+
+pool.r.squared(mi.reg) #pooled results with R^2 values
+
+```
+
+## Missing Data Write up:
+
+The dataset "davgmiss" contained missing data. Multiple imputations were performed to recover the data. 5 imputed datasets were generated, each with 30 iterations. Visually analysing the convergance plot generated revealed that the data was converging. A linear regression with the imputed dataset was performed, with stress as the outcome and negative affect and age as predictors. Results were pooled with an R-Squared value of 0.608, 95% CI = [0.49, 0.70].
 
 # 4. Linear Mixed Models 1
 
+```{r fig.width = 7, fig.height = 10}
 
+ri.m <- lmer(PosAff ~ 1 + (1 | UserID),
+            data = d,
+            REML = TRUE)
+
+summary(ri.m)
+
+
+## calculate intraclass correlation coefficient
+iccMixed("PosAff", id = "UserID", data = d)
+
+## run model diagnostic
+plot(modelDiagnostics(ri.m), ncol = 2, nrow = 2, ask = FALSE)
+
+## Confidence interval of the model
+confint(ri.m, method = "profile", oldNames = FALSE)
+
+
+```
+
+## Linear Mixed Models 1 Write up:
+
+An intercept only linear mixed model was fit to 6399 positive affect scores from 191 people. The intraclass correlation coefficient of positive affect, was 0.5431, indicating that about 54% of the total variance in positive affect was between people and the other 46% was within person due to daily fluctuations. Visual diagnostics showed that positive affect was normally distributed, hence normality assumption appear to be met. Assumptions of homogeneity of variance were met however some extreme values were found (refer to QQ deviates plot). The fixed effect intercept showed that average positive affect was 2.679, 95% CI =[2.56, 2.79]. There were however individual differences in positive affect with standard deviation for random intercept being 0.7930.
 
 # 5. Linear Mixed Models 2
 
+```{r fig.width = 7, fig.height = 10}
+## create a between and within STRESS variable
+d[, c("bSTRESS", "wSTRESS") := meanDeviations(STRESS), by = UserID]
 
+## linear mixed model with bSTRESS and wSTRESS predicting NegAff
+m1 <- lmer(PosAff ~ bSTRESS + wSTRESS + (1 + wSTRESS | UserID), data = d)
+
+## run model diagnostics
+m1.diag <- modelDiagnostics(m1, ev.perc = .005)
+plot(m1.diag, ncol = 2, nrow = 3, ask = FALSE)
+
+## identify extreme values
+m1.diag$extremeValues
+
+## creating new dataset with extremevalues removed and rerun model
+dnoev <- d[-unique(m1.diag$extremeValues$Index)]
+m1noev <- lmer(PosAff ~ bSTRESS + wSTRESS + (1 + wSTRESS | UserID), data = dnoev)
+summary(m1noev) #final model summary
+
+## confidence interval for new model
+m1noev.ci <- confint(m1noev, oldNames = FALSE)
+m1noev.ci
+
+##rerun diagnostics
+m1noev.diag <- modelDiagnostics(m1noev, ev.perc = .005)
+plot(m1noev.diag, ncol = 2, nrow = 3, ask=FALSE)
+
+```
+
+## Linear Mixed Models 2 Write up:
+
+A linear mixed model was fit to 6249 positive affect scores from 189 people. The fixed effect intercept revealed that the estimated average stress was 3.1824 [95% CI = 2.99, 3.37], when between-persons and within-person stress was zero. There were individual differences, with standard deviation of 0.7362. There was a significant fixed effect of average stress on positive affect, such that one unit higher average stress was associated with -0.2241 [95% CI = -0.29, -0.16] lower positive affect (p \<0.001). On the days where individuals were high on stress, people were expected to have -0.1595 lower positive affect, 95% CI = [-0.17, -0.15] (p \<0.001).
 
 # 6. Interactions and Moderation for LMMs
 
+```{r}
+## Generate LMM
+m2 <- lmer(STRESS ~ SUPPORT + COPEPrb + SUPPORT:COPEPrb + (1 | UserID), data = d)
+APAStyler(modelTest(m2),
+          pcontrol = list(digits = 3, stars = FALSE, includeP = TRUE,
+                          includeSign = TRUE, dropLeadingZero = TRUE))
+
+## finding M and SD of COPEPrb to generate simple slope for interaction
+egltable(c("COPEPrb"), data = d[!duplicated(UserID)])
+
+## test simple slope
+mem <- emtrends(m2, var = "SUPPORT",
+                at = list(COPEPrb = c(2.37-0.66, 2.37+0.66)),
+                lmer.df = "satterthwaite")
+summary(mem, infer = TRUE)
+
+## Create interaction graph
+visreg(m2, xvar = "SUPPORT", 
+       by = "COPEPrb", overlay=TRUE, 
+       breaks = c(2.37-0.66, 2.37+0.66), 
+       partial = FALSE, rug = FALSE, gg=TRUE, 
+       xlab = "Social Support", 
+       ylab = "Predicted Stress Rating") + 
+  scale_color_manual(values = c("1.71" = "black", "3.03" = "grey70")) +
+  theme_pubr() +
+  guides(colour = FALSE, fill = FALSE) +
+  annotate(geom = "text", x = 6, y = 2.9, 
+           label = "High Problem-Focused Coping: b = -0.24 [ -0.30, -0.18], p <.0001",
+           angle = -29) + 
+  annotate(geom = "text", x = 5.5, y = 2.3, 
+           label = "Low Problem-Focused Coping: b = -0.2 [-0.24, -0.15], p <.0001",
+           angle = -24)
+  
 
 
 
+
+```
+
+## Interaction and Moderation for LMMs Write up:
+
+A linear mixed model using restricted maximum likelihood was used to test whether the association of social support on daily stress rating is moderated by problem-focused coping scores. All predictors were included as fixed effects and a random intercept by participant was included.
+
+The social support x problem-focused coping interaction was not statistically significant (-0.04,[95% CI = -0.08, 0.01], p = .122) , which indicated that the relationship between social support and stress did not vary by problem-focused coping. If the interaction was significant, a simple slope analysis could reveal that social support would lead to a decrease in stress at both high and low problem-focused coping.

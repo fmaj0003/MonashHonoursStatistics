@@ -51,7 +51,6 @@ as follows:
 ```         
 
 lm(y ~ 1 + x, data = your_dataset)
-
 ```
 
 The `lm` stands for a **l**inear **m**odel. $y$ is the outcome. The tilde (\~) separates the outcome from the predictors. The predictors are $1$ and $x$. One is a constant, which captures the intercept, $b_0$. $x$ is whatever our predictor/explanatory variable is. We specify the dataset so `R` knows where to find the variables.
@@ -756,7 +755,7 @@ Some key concepts to understand and take away are:
 Here is a little summary of some of the functions used in this topic.
 
 | Function           | What it does                                                          |
-|-------------------|-----------------------------------------------------|
+|--------------------|-----------------------------------------------------------------------|
 | `iccMixed()`       | Calculate intraclass correlation coefficients                         |
 | `lmer()`           | fit linear mixed models in `R`                                        |
 | `fixef()`          | extract the fixed effects only coefficients from a LMM                |
